@@ -1,0 +1,47 @@
+# secrets — never commit
+.env
+.env.local
+secrets/
+*.pem
+*.key
+kaggle.json
+
+# data — large, regenerable, and some of it is synthetic
+data/raw/
+data/derived/
+data/chips/
+data/overlays/
+data/dataset/
+data/demo/
+data/labels/feedback/
+!data/aoi/
+!data/validation/
+
+# models
+models/*.pt
+models/*.pth
+models/*.onnx
+models/*.ckpt
+
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+*.egg-info/
+.venv/
+venv/
+
+# node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

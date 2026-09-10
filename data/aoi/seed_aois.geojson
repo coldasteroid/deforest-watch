@@ -1,0 +1,78 @@
+{
+  "type": "FeatureCollection",
+  "_comment": "DeforestWatch seed AOIs. Centred on the published PEKB mine location 22.83795 N, 82.81401 E (Global Energy Monitor, flagged exact). VERIFY VISUALLY before the first real run: open this file at geojson.io and switch the basemap to satellite, or load it in QGIS over Esri World Imagery. The mine pit and overburden dumps must sit well inside hasdeo-pekb with several km of intact forest on every side. See docs/02-BACKEND-SPEC.md section 3.1 and risk R13.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "hasdeo-pekb",
+        "name": "PEKB Block",
+        "purpose": "primary target; use this AOI in all phases until Phase 9",
+        "cadence_days": 5,
+        "min_patch_ha": 1.0,
+        "sensor": "S2",
+        "active": true,
+        "approx_area_km2": 455,
+        "centre": [82.814, 22.838]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [82.71, 22.74], [82.91, 22.74], [82.91, 22.94], [82.71, 22.94], [82.71, 22.74]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "hasdeo-arand",
+        "name": "Hasdeo Arand Forest",
+        "purpose": "operational monitoring of the wider forest block",
+        "cadence_days": 5,
+        "min_patch_ha": 1.0,
+        "sensor": "S2",
+        "active": true,
+        "approx_area_km2": 2051
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [82.60, 22.70], [83.05, 22.70], [83.05, 23.10], [82.60, 23.10], [82.60, 22.70]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "aravalli-ncr",
+        "name": "Aravalli NCR (generalisation)",
+        "purpose": "held-out generalisation site; NEVER include in the training set",
+        "cadence_days": 10,
+        "min_patch_ha": 0.5,
+        "sensor": "S2",
+        "active": false,
+        "approx_area_km2": 1351
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [76.95, 28.30], [77.45, 28.30], [77.45, 28.55], [76.95, 28.55], [76.95, 28.30]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "_pekb-reference-point",
+        "name": "PEKB mine, published location",
+        "purpose": "VERIFICATION AID, not an AOI. Do not seed this into the database. The mine pit should be visible at or near this point on a satellite basemap.",
+        "source": "Global Energy Monitor, Parsa East And Kanta Basan Coal Mine, coordinate flagged exact",
+        "corroboration": "Block lies in Udaipur tehsil, Surguja district, covering villages Ghatbarra, Hariharpur, Fatehpur and Salhi. Ghatbarra is ~73 km by road from Ambikapur (23.12 N, 83.20 E), implying 45-56 km straight-line; this point is 50 km away."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [82.81401, 22.83795]
+      }
+    }
+  ]
+}

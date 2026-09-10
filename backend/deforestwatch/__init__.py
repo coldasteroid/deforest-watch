@@ -1,0 +1,2 @@
+"""DeforestWatch image comparison backend."""
+

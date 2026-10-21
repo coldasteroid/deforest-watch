@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: dw-db
+    environment:
+      POSTGRES_USER: dw
+      POSTGRES_PASSWORD: dw
+      POSTGRES_DB: deforestwatch
+    ports:
+      - "5432:5432"
+    volumes:
+      - dw-postgres:/var/lib/postgresql/data
+
+volumes:
+  dw-postgres:

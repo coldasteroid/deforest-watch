@@ -1,5 +1,6 @@
 import { BarChart3, Bell, Images, Map, PlaySquare, Settings, Shapes } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useHealth } from '../../hooks/useHealth';
 
 const nav = [
   { to: '/', label: 'Map', icon: Map },
@@ -12,6 +13,10 @@ const nav = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const health = useHealth();
+  const demoMode = import.meta.env.VITE_ENABLE_MSW === 'true';
+  const label = demoMode ? 'Demo data mode' : health.isLoading ? 'Checking services' : health.isError ? 'API unavailable' : health.data?.status === 'ok' ? 'Services healthy' : 'Services degraded';
+  const tone = demoMode || health.isLoading ? 'border-amber-300 bg-amber-50 text-amber-900' : health.isError || health.data?.status === 'degraded' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-800';
   return (
     <div className="min-h-screen bg-bg text-text">
       <header className="sticky top-0 z-40 border-b border-border bg-surface">
@@ -36,6 +41,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </NavLink>
             ))}
           </nav>
+          <div className={`hidden rounded-full border px-3 py-1 text-xs font-medium sm:block ${tone}`} title="Database and Earth Engine dependency status">
+            {label}
+          </div>
         </div>
       </header>
       <main>{children}</main>

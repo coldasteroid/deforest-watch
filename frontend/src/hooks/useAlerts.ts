@@ -6,6 +6,7 @@ export const useAlerts = (filters?: AlertFilters & { sort?: string; order?: stri
   useQuery({
     queryKey: ['alerts', filters],
     queryFn: () => client.alerts(filters),
+    refetchInterval: 30_000,
   });
 
 export const useAlert = (id?: string) =>
@@ -19,4 +20,5 @@ export const useAlertGeoJson = (filters?: AlertFilters) =>
   useQuery({
     queryKey: ['alerts.geojson', filters],
     queryFn: () => client.alertsGeoJson(filters),
+    refetchInterval: 30_000,
   });

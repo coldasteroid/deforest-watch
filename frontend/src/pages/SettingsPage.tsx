@@ -1,7 +1,9 @@
-import { Database, KeyRound, Mail, Server, Smartphone } from 'lucide-react';
+import { Database, Edit2, KeyRound, Mail, Server, Smartphone, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { StatusBadge } from '../components/alerts/Badges';
 import { Card, EmptyState, ErrorState, LoadingState, PageHeader } from '../components/shared/State';
+import { client } from '../api/client';
 import { useConfig, useHealth } from '../hooks/useConfig';
 import { useSubscribers } from '../hooks/useSubscribers';
 
@@ -9,7 +11,48 @@ export function SettingsPage() {
   const subscribers = useSubscribers();
   const config = useConfig();
   const health = useHealth();
+  const queryClient = useQueryClient();
   const [apiKey, setApiKey] = useState(localStorage.getItem('dw_api_key') ?? '');
+  const [subscriberName, setSubscriberName] = useState('');
+  const [subscriberRole, setSubscriberRole] = useState('');
+  const [subscriberPhone, setSubscriberPhone] = useState('');
+  const [subscriberEmail, setSubscriberEmail] = useState('');
+  const [subscriberActive, setSubscriberActive] = useState(true);
+  const [editingSubscriberId, setEditingSubscriberId] = useState<string | null>(null);
+  const saveSubscriber = useMutation({
+    mutationFn: () => {
+      const data = {
+      name: subscriberName,
+      role: subscriberRole || null,
+      phone: subscriberPhone || null,
+      email: subscriberEmail || null,
+      active: subscriberActive,
+      aoi_ids: [],
+      };
+      return editingSubscriberId ? client.updateSubscriber(editingSubscriberId, data) : client.saveSubscriber(data);
+    },
+    onSuccess: () => {
+      setEditingSubscriberId(null);
+      setSubscriberName('');
+      setSubscriberRole('');
+      setSubscriberPhone('');
+      setSubscriberEmail('');
+      setSubscriberActive(true);
+      void queryClient.invalidateQueries({ queryKey: ['subscribers'] });
+    },
+  });
+  const deleteSubscriber = useMutation({
+    mutationFn: (id: string) => client.deleteSubscriber(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['subscribers'] }),
+  });
+  const editSubscriber = (subscriber: NonNullable<typeof subscribers.data>['items'][number]) => {
+    setEditingSubscriberId(subscriber.id);
+    setSubscriberName(subscriber.name);
+    setSubscriberRole(subscriber.role ?? '');
+    setSubscriberPhone(subscriber.phone ?? '');
+    setSubscriberEmail(subscriber.email ?? '');
+    setSubscriberActive(subscriber.active);
+  };
   if (subscribers.isLoading || config.isLoading || health.isLoading) return <LoadingState rows={8} />;
   if (subscribers.isError || config.isError || health.isError) return <ErrorState message="Settings could not be loaded." onRetry={() => void config.refetch()} />;
   if (!config.data) return <EmptyState title="No server configuration returned." />;
@@ -33,16 +76,31 @@ export function SettingsPage() {
           <h2 className="text-base font-semibold">Subscribers</h2>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-border bg-slate-50 text-xs uppercase text-muted"><tr><th className="px-3 py-2">Name</th><th className="px-3 py-2">Role</th><th className="px-3 py-2">Phone</th><th className="px-3 py-2">Email</th><th className="px-3 py-2">Active</th></tr></thead>
+              <thead className="border-b border-border bg-slate-50 text-xs uppercase text-muted"><tr><th className="px-3 py-2">Name</th><th className="px-3 py-2">Role</th><th className="px-3 py-2">Phone</th><th className="px-3 py-2">Email</th><th className="px-3 py-2">Active</th><th className="px-3 py-2">Actions</th></tr></thead>
               <tbody>
                 {subscribers.data?.items.map((sub) => (
                   <tr key={sub.id} className="border-b border-border">
-                    <td className="px-3 py-2 font-medium">{sub.name}</td><td className="px-3 py-2">{sub.role}</td><td className="px-3 py-2"><span className="inline-flex items-center gap-1"><Smartphone size={14} />{sub.phone ?? '-'}</span></td><td className="px-3 py-2"><span className="inline-flex items-center gap-1"><Mail size={14} />{sub.email ?? '-'}</span></td><td className="px-3 py-2">{sub.active ? 'Yes' : 'No'}</td>
+                    <td className="px-3 py-2 font-medium">{sub.name}</td><td className="px-3 py-2">{sub.role}</td><td className="px-3 py-2"><span className="inline-flex items-center gap-1"><Smartphone size={14} />{sub.phone ?? '-'}</span></td><td className="px-3 py-2"><span className="inline-flex items-center gap-1"><Mail size={14} />{sub.email ?? '-'}</span></td><td className="px-3 py-2">{sub.active ? 'Yes' : 'No'}</td><td className="px-3 py-2"><div className="flex gap-1"><button className="rounded p-1 hover:bg-slate-100" aria-label={`Edit ${sub.name}`} onClick={() => editSubscriber(sub)}><Edit2 size={14} /></button><button className="rounded p-1 text-red-700 hover:bg-red-50" aria-label={`Delete ${sub.name}`} onClick={() => deleteSubscriber.mutate(sub.id)}><Trash2 size={14} /></button></div></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <form className="mt-4 grid gap-3 rounded-md border border-border bg-slate-50 p-3" onSubmit={(event) => { event.preventDefault(); if (subscriberName && (subscriberPhone || subscriberEmail)) saveSubscriber.mutate(); }}>
+            <div className="text-sm font-semibold">{editingSubscriberId ? 'Edit subscriber' : 'Add subscriber'}</div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <input className="rounded-md border border-border p-2 text-sm" placeholder="Name" value={subscriberName} onChange={(event) => setSubscriberName(event.target.value)} required />
+              <input className="rounded-md border border-border p-2 text-sm" placeholder="Role (optional)" value={subscriberRole} onChange={(event) => setSubscriberRole(event.target.value)} />
+              <input className="rounded-md border border-border p-2 text-sm" placeholder="Phone (optional)" value={subscriberPhone} onChange={(event) => setSubscriberPhone(event.target.value)} />
+              <input className="rounded-md border border-border p-2 text-sm" type="email" placeholder="Email (optional)" value={subscriberEmail} onChange={(event) => setSubscriberEmail(event.target.value)} />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={subscriberActive} onChange={(event) => setSubscriberActive(event.target.checked)} /> Active</label>
+              <button className="rounded-md bg-slate-900 px-3 py-2 text-sm text-white disabled:opacity-50" disabled={saveSubscriber.isPending || !subscriberName || (!subscriberPhone && !subscriberEmail)} type="submit">{editingSubscriberId ? 'Save changes' : 'Add subscriber'}</button>
+              {editingSubscriberId && <button className="rounded-md border border-border px-3 py-2 text-sm" type="button" onClick={() => { setEditingSubscriberId(null); setSubscriberName(''); setSubscriberRole(''); setSubscriberPhone(''); setSubscriberEmail(''); setSubscriberActive(true); }}>Cancel</button>}
+            </div>
+            {saveSubscriber.isError && <p className="text-sm text-red-700">Could not save subscriber. Add the API key and try again.</p>}
+          </form>
           {!config.data.notifications_enabled && <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Alerts are recorded but not dispatched.</div>}
         </Card>
         <Card className="p-4">

@@ -1,5 +1,5 @@
 import { http, HttpResponse, delay } from 'msw';
-import type { AlertOut, GeoJsonFeatureCollection, RunDetailOut } from '../api/types';
+import type { AlertOut, AoiOut, GeoJsonFeatureCollection, RunDetailOut } from '../api/types';
 import {
   alerts,
   aois,
@@ -54,6 +54,26 @@ export const handlers = [
     await delay(300);
     return HttpResponse.json(envelope(aois));
   }),
+  http.post(api('/aois'), async ({ request }) => {
+    const unauthorized = requireKey(request);
+    if (unauthorized) return unauthorized;
+    const data = (await request.json()) as Record<string, unknown>;
+    const created = {
+      id: crypto.randomUUID(),
+      slug: String(data.name ?? 'new-region').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      name: String(data.name ?? 'New region'),
+      geometry: data.geometry as AoiOut['geometry'],
+      area_km2: 0,
+      cadence_days: Number(data.cadence_days ?? 5),
+      min_patch_ha: Number(data.min_patch_ha ?? 1),
+      sensor: 'S2' as const,
+      active: true,
+      next_run_at: null,
+      created_at: new Date().toISOString(),
+    };
+    aois.push(created);
+    return HttpResponse.json(created, { status: 201 });
+  }),
   http.get(api('/aois/:id'), async ({ params }) => {
     await delay(300);
     const aoi = aois.find((item) => item.id === params.id);
@@ -64,6 +84,22 @@ export const handlers = [
       alert_counts: { new: 4, verified: 19, false_positive: 5, resolved: 13 },
       alerts_total: alerts.filter((alert) => alert.aoi_id === aoi.id).length,
     });
+  }),
+  http.patch(api('/aois/:id'), async ({ request, params }) => {
+    const unauthorized = requireKey(request);
+    if (unauthorized) return unauthorized;
+    const aoi = aois.find((item) => item.id === params.id);
+    if (!aoi) return HttpResponse.json({ detail: 'AOI not found' }, { status: 404 });
+    Object.assign(aoi, await request.json());
+    return HttpResponse.json(aoi);
+  }),
+  http.delete(api('/aois/:id'), async ({ request, params }) => {
+    const unauthorized = requireKey(request);
+    if (unauthorized) return unauthorized;
+    const index = aois.findIndex((item) => item.id === params.id);
+    if (index < 0) return HttpResponse.json({ detail: 'AOI not found' }, { status: 404 });
+    aois.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
   }),
   http.post(api('/aois/:id/runs'), async ({ request }) => {
     const unauthorized = requireKey(request);
@@ -127,11 +163,17 @@ export const handlers = [
     const url = new URL(request.url);
     const tier = url.searchParams.get('tier');
     const status = url.searchParams.get('status');
+    const aoiId = url.searchParams.get('aoi_id');
+    const since = url.searchParams.get('since');
+    const until = url.searchParams.get('until');
     const search = url.searchParams.get('search')?.toLowerCase();
     const items = alerts.filter(
       (alert) =>
         (!tier || alert.tier === tier) &&
         (!status || alert.status === status) &&
+        (!aoiId || alert.aoi_id === aoiId) &&
+        (!since || alert.detected_at >= since) &&
+        (!until || alert.detected_at.slice(0, 10) <= until) &&
         (!search || alert.aoi_name.toLowerCase().includes(search) || alert.id.includes(search)),
     );
     return HttpResponse.json(envelope(items));
@@ -172,7 +214,10 @@ export const handlers = [
       headers: { 'Content-Type': 'text/csv' },
     }),
   ),
-  http.get(api('/detections'), () => HttpResponse.json(alertGeoJson(alerts))),
+  http.get(api('/detections'), ({ request }) => {
+    const runId = new URL(request.url).searchParams.get('run_id');
+    return HttpResponse.json(alertGeoJson(runId ? alerts.filter((alert) => alert.run_id === runId) : alerts));
+  }),
   http.get(api('/subscribers'), async () => {
     await delay(300);
     return HttpResponse.json(envelope(subscribers));
@@ -182,6 +227,22 @@ export const handlers = [
     if (unauthorized) return unauthorized;
     const data = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({ ...data, id: crypto.randomUUID(), created_at: new Date().toISOString() }, { status: 201 });
+  }),
+  http.patch(api('/subscribers/:id'), async ({ request, params }) => {
+    const unauthorized = requireKey(request);
+    if (unauthorized) return unauthorized;
+    const subscriber = subscribers.find((item) => item.id === params.id);
+    if (!subscriber) return HttpResponse.json({ detail: 'Subscriber not found' }, { status: 404 });
+    Object.assign(subscriber, await request.json());
+    return HttpResponse.json(subscriber);
+  }),
+  http.delete(api('/subscribers/:id'), async ({ request, params }) => {
+    const unauthorized = requireKey(request);
+    if (unauthorized) return unauthorized;
+    const index = subscribers.findIndex((item) => item.id === params.id);
+    if (index < 0) return HttpResponse.json({ detail: 'Subscriber not found' }, { status: 404 });
+    subscribers.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
   }),
   http.get(api('/metrics/sdg'), async ({ request }) => {
     await delay(300);

@@ -166,6 +166,25 @@ export interface RunDetailOut extends RunOut {
   overlay_bounds: OverlayBounds | null;
 }
 
+export interface LiveSnapshot {
+  mode: 'live_gee_snapshot';
+  source: string;
+  aoi_name: string;
+  run_id: string;
+  detections_count: number;
+  loss_area_ha: number;
+  before_index: number;
+  after_index: number;
+  mean_drop: number;
+  satellite_url: string;
+  overlay_url: string;
+  change_url: string;
+  forest_url: string;
+  overlay_bounds: OverlayBounds;
+  detections: GeoJsonFeatureCollection;
+  run: RunDetailOut;
+}
+
 export interface RunTriggerRequest {
   force_refetch?: boolean;
   current_end?: string;
@@ -232,7 +251,9 @@ export interface AlertFilters {
   tier?: AlertTier;
   status?: AlertStatus;
   since?: string;
+  until?: string;
   bbox?: BBox;
+  search?: string;
   limit?: number;
   offset?: number;
 }
@@ -301,7 +322,7 @@ export interface TimeseriesResponse {
   points: TimeseriesPoint[];
 }
 
-export type TimeseriesBucket = 'run' | 'week' | 'month';
+export type TimeseriesBucket = 'run' | 'week' | 'month' | 'year';
 
 // ---------------------------------------------------------------------------
 // Models & config — endpoints 24, 2, 1

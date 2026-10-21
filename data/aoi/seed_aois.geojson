@@ -5,6 +5,27 @@
     {
       "type": "Feature",
       "properties": {
+        "slug": "nepal-bhotekoshi-2026",
+        "name": "Rasuwa / Bhote Koshi disaster case",
+        "purpose": "inactive disaster-monitoring AOI; verify impact polygons before activation",
+        "event_type": "ice-rock-avalanche-debris-flood",
+        "event_date": "2026-08-26",
+        "geometry_status": "approximate-event-envelope",
+        "cadence_days": 5,
+        "min_patch_ha": 1.0,
+        "sensor": "S2",
+        "active": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [85.48, 28.24], [85.63, 28.24], [85.63, 28.38], [85.48, 28.38], [85.48, 28.24]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
         "slug": "hasdeo-pekb",
         "name": "PEKB Block",
         "purpose": "primary target; use this AOI in all phases until Phase 9",

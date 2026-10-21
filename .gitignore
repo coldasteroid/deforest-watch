@@ -13,6 +13,7 @@ data/chips/
 data/overlays/
 data/dataset/
 data/demo/
+data/backfill/
 data/labels/feedback/
 !data/aoi/
 !data/validation/
@@ -22,6 +23,7 @@ models/*.pt
 models/*.pth
 models/*.onnx
 models/*.ckpt
+models/*.metrics.json
 
 # python
 __pycache__/

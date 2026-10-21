@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "name": "nepal_bhotekoshi_2026_event",
+  "metadata": {
+    "event": "26 August 2026 Rasuwa / Bhote Koshi ice-rock avalanche and debris-flood cascade",
+    "geometry_status": "approximate source marker; verify against official event polygon before quantitative evaluation",
+    "event_date": "2026-08-26",
+    "source": "https://nset.org.np/disaster/rasuwa-flood/",
+    "secondary_source": "https://www.who.int/nepal/emergencies/2026-rasuwa-flash-floods",
+    "tertiary_source": "https://www.icimod.org/press-release/major-flash-flood-sweeps-through-nepals-rasuwa-district-raising-fears-of-further-downstream-flooding/",
+    "note": "This event is a disaster-monitoring case study, not a deforestation label or Hasdeo metric."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "nepal-bhotekoshi-2026",
+        "name": "Rasuwa / Bhote Koshi hazard cascade",
+        "event_type": "ice-rock-avalanche-debris-flood",
+        "event_date": "2026-08-26",
+        "geometry_status": "approximate-source-marker",
+        "location_confidence": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [85.55406, 28.31249]
+      }
+    }
+  ]
+}

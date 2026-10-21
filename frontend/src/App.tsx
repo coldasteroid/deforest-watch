@@ -8,6 +8,7 @@ import { RegionsPage } from './pages/RegionsPage';
 import { RunsPage } from './pages/RunsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ComparePage } from './pages/ComparePage';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +22,7 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <ErrorBoundary><QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AppShell>
           <Routes>
@@ -36,6 +37,6 @@ export default function App() {
           </Routes>
         </AppShell>
       </BrowserRouter>
-    </QueryClientProvider>
+    </QueryClientProvider></ErrorBoundary>
   );
 }

@@ -7,10 +7,12 @@ cd backend
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-uvicorn deforestwatch.main:app --reload --port 8000
+uvicorn deforestwatch.api.main:app --reload --port 8000
 ```
 
 Open `http://localhost:8000/docs` to try the API. `POST /api/compare` accepts two same-sized RGB images or four-band satellite GeoTIFFs. For GeoTIFFs, bands are expected in `red, green, blue, nir` order; the API computes NDVI. RGB images use an excess-green index fallback.
+
+The API uses PostgreSQL/PostGIS for AOIs, runs, detections, alerts and subscribers. Set `DATABASE_URL` and `ADMIN_API_KEY` in `.env` before using write routes. Until the database is migrated, `/api/health` correctly reports a degraded database dependency.
 
 Example with curl:
 

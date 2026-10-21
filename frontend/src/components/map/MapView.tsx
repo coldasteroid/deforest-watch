@@ -1,9 +1,10 @@
 import L from 'leaflet';
 import { useEffect } from 'react';
-import { GeoJSON, ImageOverlay, LayersControl, MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { CircleMarker, GeoJSON, ImageOverlay, LayersControl, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
 import type { AlertOut, AoiOut, GeoJsonFeatureCollection, RunDetailOut } from '../../api/types';
 import { useUiStore } from '../../store/uiStore';
 import { TierBadge } from '../alerts/Badges';
+import { nepalEvent } from '../../data/nepalEvent';
 
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -33,16 +34,28 @@ export function MapView({
   alerts,
   alertGeoJson,
   latestRun,
+  satelliteUrl,
+  satelliteBounds,
+  ndviUrl,
+  forestMaskUrl,
   opacity,
 }: {
   aois: AoiOut[];
   alerts: AlertOut[];
   alertGeoJson?: GeoJsonFeatureCollection;
   latestRun?: RunDetailOut;
+  satelliteUrl?: string;
+  satelliteBounds?: [[number, number], [number, number]];
+  ndviUrl?: string;
+  forestMaskUrl?: string;
   opacity: number;
 }) {
   const showAlerts = useUiStore((state) => state.showAlerts);
+  const showSatellite = useUiStore((state) => state.showSatellite);
   const showLossOverlay = useUiStore((state) => state.showLossOverlay);
+  const showNdvi = useUiStore((state) => state.showNdvi);
+  const showForestMask = useUiStore((state) => state.showForestMask);
+  const showNepalEvent = useUiStore((state) => state.showNepalEvent);
   const overlayBounds = latestRun?.overlay_bounds
     ? [
         [latestRun.overlay_bounds[0], latestRun.overlay_bounds[1]],
@@ -59,6 +72,11 @@ export function MapView({
         <LayersControl.BaseLayer name="Esri World Imagery">
           <TileLayer attribution="Tiles &copy; Esri" url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
         </LayersControl.BaseLayer>
+        {showSatellite && satelliteUrl && satelliteBounds && (
+          <LayersControl.Overlay checked name="Live GEE composite">
+            <ImageOverlay url={satelliteUrl} bounds={satelliteBounds} opacity={0.78} />
+          </LayersControl.Overlay>
+        )}
       </LayersControl>
       {aois.map((aoi) => (
         <GeoJSON key={aoi.id} data={aoi.geometry} style={{ color: aoi.active ? '#0f172a' : '#94a3b8', weight: 2, fillOpacity: 0.03 }} />
@@ -82,6 +100,25 @@ export function MapView({
       )}
       {showLossOverlay && latestRun?.overlay_url && overlayBounds && (
         <ImageOverlay url={latestRun.overlay_url} bounds={overlayBounds} opacity={opacity / 100} />
+      )}
+      {showNdvi && ndviUrl && overlayBounds && (
+        <ImageOverlay url={ndviUrl} bounds={overlayBounds} opacity={Math.min(0.8, opacity / 100)} />
+      )}
+      {showForestMask && forestMaskUrl && overlayBounds && (
+        <ImageOverlay url={forestMaskUrl} bounds={overlayBounds} opacity={Math.min(0.45, opacity / 100)} />
+      )}
+      {showNepalEvent && (
+        <CircleMarker
+          center={[nepalEvent.coordinates[1], nepalEvent.coordinates[0]]}
+          radius={10}
+          pathOptions={{ color: '#b45309', fillColor: '#f59e0b', fillOpacity: 0.75, dashArray: '4 4' }}
+        >
+          <Popup>
+            <strong>{nepalEvent.name}</strong><br />
+            {nepalEvent.date} · {nepalEvent.type}<br />
+            <small>{nepalEvent.geometryStatus}. Separate from Hasdeo deforestation totals.</small>
+          </Popup>
+        </CircleMarker>
       )}
       <FocusAlert alerts={alerts} />
     </MapContainer>

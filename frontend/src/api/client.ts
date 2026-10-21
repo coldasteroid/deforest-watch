@@ -12,6 +12,7 @@ import type {
   Paginated,
   ResolveRequest,
   RunDetailOut,
+  LiveSnapshot,
   RunOut,
   RunTriggerRequest,
   RunTriggerResponse,
@@ -52,12 +53,16 @@ export const client = {
   config: () => get<EffectiveConfig>('/config'),
   aois: () => get<Paginated<AoiOut>>('/aois'),
   aoi: (id: string) => get<AoiDetailOut>(`/aois/${id}`),
+  createAoi: (data: import('./types').AoiCreate) => api.post<AoiOut>('/aois', data).then((res) => res.data),
+  updateAoi: (id: string, data: import('./types').AoiPatch) => api.patch<AoiOut>(`/aois/${id}`, data).then((res) => res.data),
+  deleteAoi: (id: string) => api.delete(`/aois/${id}`).then(() => undefined),
   triggerRun: (id: string, data: RunTriggerRequest = {}) =>
     api.post<RunTriggerResponse>(`/aois/${id}/runs`, data).then((res) => res.data),
   runs: (params?: Record<string, string | number | undefined>) =>
     get<Paginated<RunOut>>('/runs', { params }),
   run: (id: string) => get<RunDetailOut>(`/runs/${id}`),
   latestRun: (aoi_id?: string) => get<RunDetailOut>('/runs/latest', { params: { aoi_id } }),
+  liveSnapshot: () => get<LiveSnapshot>('/live/snapshot'),
   alerts: (params?: AlertFilters & { sort?: string; order?: string }) =>
     get<Paginated<AlertOut>>('/alerts', { params }),
   alert: (id: string) => get<AlertDetailOut>(`/alerts/${id}`),
@@ -65,6 +70,8 @@ export const client = {
     get<GeoJsonFeatureCollection>('/alerts.geojson', { params }),
   subscribers: () => get<Paginated<SubscriberOut>>('/subscribers'),
   saveSubscriber: (data: SubscriberCreate) => api.post<SubscriberOut>('/subscribers', data).then((res) => res.data),
+  updateSubscriber: (id: string, data: Partial<SubscriberCreate>) => api.patch<SubscriberOut>(`/subscribers/${id}`, data).then((res) => res.data),
+  deleteSubscriber: (id: string) => api.delete(`/subscribers/${id}`).then(() => undefined),
   sdgMetrics: (aoi_id?: string) => get<SdgMetrics>('/metrics/sdg', { params: { aoi_id } }),
   timeseries: (aoi_id?: string) => get<TimeseriesResponse>('/metrics/timeseries', { params: { aoi_id, bucket: 'year' } }),
   models: () => get<Paginated<ModelOut>>('/models'),

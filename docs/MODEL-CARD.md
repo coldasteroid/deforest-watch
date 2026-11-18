@@ -155,18 +155,20 @@ would inflate the model's apparent margin over that baseline.
 The unchanged checkpoint run on a biome it never trained on, at its own
 threshold of 0.99 (`data/evaluation/generalisation-aravalli-ncr.json`):
 
+484 chips over 2024 and 2025:
+
 | detector | predicted | false-alarm rate |
 |---|---:|---:|
 | reference (Hansen) | 60 px, about 0.6 ha | - |
-| **U-Net** | 33,017 px, **330.17 ha** | **0.21%** |
-| NDVI baseline | 861,298 px, 8,612.98 ha | 5.43% |
+| **U-Net** | **477.25 ha** | **0.15%** |
+| NDVI baseline | 14,166.52 ha | 4.47% |
 
 **Neither detector transfers.** Both fire across semi-arid scrub where the
 reference records essentially nothing: a change detector tuned on an
 open-cast pit responds to bright bare soil, which is risk **R9** measured
 rather than speculated about.
 
-The useful part is the margin. The U-Net raises **26 times fewer false
+The useful part is the margin. The U-Net raises **29.7 times fewer false
 alarms** than the threshold detector it replaces, so it degrades far more
 gracefully out of domain even though it degrades. That is the honest S9
 metric drop, and it is worth reporting as a result rather than hidden.

@@ -104,6 +104,8 @@ def main() -> int:
     parser.add_argument("--model", type=Path, default=None, help="checkpoint; omit for the NDVI baseline")
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--output-dir", type=Path, default=Path("data/evaluation/detections"))
+    parser.add_argument("--summary", type=Path, default=Path("data/backfill/hasdeo-pekb-live.json"),
+                        help="backfill summary for scripts/compare_published_area.py; merged across runs")
     args = parser.parse_args()
 
     if args.model is not None and not args.model.is_file():
@@ -111,6 +113,27 @@ def main() -> int:
     results = []
     for year in args.years:
         results.append(export_year(args.aoi, year, args.days, args.model, args.threshold, args.output_dir))
+
+    # scripts/compare_published_area.py reads a backfill summary rather than
+    # the polygons, and only a fixture-derived one existed. Writing a
+    # live-labelled summary lets the S8 comparison run against real imagery,
+    # with the evidence field saying plainly which it is.
+    if args.summary is not None:
+        existing: list[dict] = []
+        if args.summary.is_file():
+            existing = json.loads(args.summary.read_text(encoding="utf-8"))
+        merged = {int(row["year"]): row for row in existing}
+        for result in results:
+            merged[result["year"]] = {
+                "year": result["year"], "status": "succeeded",
+                "hectares_detected": result["area_ha"], "detections": result["detections"],
+                "model_version": result["model_version"], "aoi": args.aoi,
+                "evidence": "live_earth_engine",
+            }
+        args.summary.parent.mkdir(parents=True, exist_ok=True)
+        args.summary.write_text(json.dumps([merged[y] for y in sorted(merged)], indent=2), encoding="utf-8")
+        print(f"summary -> {args.summary} ({len(merged)} year(s))")
+
     print(json.dumps({"aoi": args.aoi, "results": results}, indent=2))
     return 0
 

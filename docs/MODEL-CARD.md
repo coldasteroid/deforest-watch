@@ -150,6 +150,36 @@ Label support was **not** used to filter chips. The NDVI drop is exactly what
 the baseline detector thresholds, so discarding labels that disagree with it
 would inflate the model's apparent margin over that baseline.
 
+## S9 generalisation: the semi-arid Aravalli site
+
+The unchanged checkpoint run on a biome it never trained on, at its own
+threshold of 0.99 (`data/evaluation/generalisation-aravalli-ncr.json`):
+
+| detector | predicted | false-alarm rate |
+|---|---:|---:|
+| reference (Hansen) | 60 px, about 0.6 ha | - |
+| **U-Net** | 33,017 px, **330.17 ha** | **0.21%** |
+| NDVI baseline | 861,298 px, 8,612.98 ha | 5.43% |
+
+**Neither detector transfers.** Both fire across semi-arid scrub where the
+reference records essentially nothing: a change detector tuned on an
+open-cast pit responds to bright bare soil, which is risk **R9** measured
+rather than speculated about.
+
+The useful part is the margin. The U-Net raises **26 times fewer false
+alarms** than the threshold detector it replaces, so it degrades far more
+gracefully out of domain even though it degrades. That is the honest S9
+metric drop, and it is worth reporting as a result rather than hidden.
+
+Two things qualify it. Mean baseline NDVI over the AOI is 0.381 against a
+forest gate of 0.35, so most of the site passes a gate meant to select
+forest; the Hasdeo `FOREST_NDVI_MIN` of 0.50 would exclude nearly all of it,
+and that is most of why the baseline fires so widely. And Hansen maps almost
+nothing here (0.4% mean `treecover2000`), so the reference is near-empty
+rather than confidently negative, and some predictions may be real quarrying
+it does not record. The comparison between the two detectors holds either
+way, since both are scored against the same reference.
+
 ## Known limitations
 
 - Weak labels only; agreement with Hansen, not field truth.

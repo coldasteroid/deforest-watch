@@ -62,6 +62,39 @@ Updated 2026-11-18.
   from the chip index. The index is now built on a leakage-safe spatial split
   (see below), so the report is a valid regression reference against synthetic
   labels; it is still not field evidence.
+- Live database (2026-11-18). PostGIS 3.7.0 is installed into the local
+  PostgreSQL 18, the Alembic migration is applied (16 tables, none missing),
+  and the seeds have run: 4 AOIs and 1 subscriber. `scripts/phase_gate.py
+  --live` now reports **31 pass, 3 open**. Note the `--live` flag: without it
+  the script refuses to count live evidence and reports 30/4, which is
+  deliberate and should not be read as a regression.
+  Getting there needed a fix the bundle does not document. `CREATE EXTENSION
+  postgis` failed with "could not load library postgis-3.dll: The specified
+  module could not be found", which on Windows means a dependency, not the
+  file. Walking the import tree gave `postgis-3 -> libproj_9 -> libcurl ->
+  libbrotlidec.dll, libnghttp2-14.dll`. The bundle ships brotli only under
+  `bin/postgisgui`, a subfolder that is not on the DLL search path, and omits
+  nghttp2 entirely; Git for Windows supplies a MinGW build of the latter that
+  imports only KERNEL32 and msvcrt. Three DLLs were copied into `bin`, not
+  the 97 GTK libraries beside them. `infra/bootstrap_db.sql` now holds the
+  role/database/extension SQL.
+- First scheduled run through the worker (2026-11-18). It failed first with
+  "no clear S2 scene in 2025-10-20..2025-11-03": the worker composited three
+  fixed 14-day windows, one of them the same fortnight a year earlier, which
+  was the monsoon tail. The seasonal window is now 75 days against 21 for the
+  current and recent windows, and a run whose seasonal baseline has no clear
+  scene degrades to the recent baseline instead of failing. The retry then
+  succeeded: 100 chips, 0 gated in, 0 detections, 802 s, which is the correct
+  operational answer for a pit cleared months earlier.
+  That run also showed the stored record was not auditable: the window
+  columns and the scene table were empty, so an alert could not say what
+  period it covered or which scenes produced it. `persist_execution` now
+  writes both, and has tests, having previously had none at all.
+- Live annual detections with the trained model, against the published PEKB
+  increments: 2019 12.69 ha (81 published), 2020 9.83 ha (64), 2021 51.3 ha
+  (92), 2024 134.45 ha (150), 2025 70.48 ha (133). The detector tracks the
+  years it was trained on far better than the earlier ones, which is the
+  honest shape of a model fitted to 2024-25 Hansen labels.
 - First live operational run with a trained model (2026-11-18). `dw detect`
   ran against Sentinel-2 imagery for 2026-11-15 (0.31% cloud; 11 scenes under
   the 20% gate since September, so the earlier "no clear acquisition" note is
@@ -205,15 +238,14 @@ Updated 2026-11-18.
 
 ## Gates still open
 
-1. Create the `dw` role and `deforestwatch` database on the running
-   PostgreSQL 18 service, then run the real Alembic migration plus seed
-   checks. PostGIS 3.7.0 was installed into that server on 2026-11-18 and the
-   extension files are present; only the role, database, `CREATE EXTENSION`
-   and migration remain, and they need the `postgres` superuser password.
-   Note that `infra/docker-compose.yml` still pins `postgis/postgis:16-3.4`,
-   so the Docker path and this machine are now on different versions.
-2. Verify a current operational window when a sufficiently clear Sentinel-2
-   acquisition becomes available, and complete a live Landsat fallback fetch.
+1. CLOSED 2026-11-18. The database is live: PostGIS 3.7.0, migration applied,
+   seeds run, `phase_gate.py --live` at 31 pass / 3 open. Note that
+   `infra/docker-compose.yml` still pins `postgis/postgis:16-3.4`, so the
+   Docker path and this machine are on different versions.
+2. CLOSED 2026-11-18 for Sentinel-2: 11 scenes under the 20% cloud gate since
+   September, the most recent 2026-11-15 at 0.31%, and a live run completed
+   against it. A live Landsat fallback fetch is still outstanding; 3 Landsat 9
+   scenes are available under the gate.
 3. Replace synthetic truth with at least 150 reviewed Hasdeo labels. The
    leakage-safe spatial split itself is done (see above); what is missing is
    labels spread over enough blocks for the positive pixels to stratify.

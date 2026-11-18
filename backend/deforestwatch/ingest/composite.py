@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from ..contracts import DateWindow, SceneMeta
 from .collections import COLLECTIONS, landsat_qa_mask, s2_cloud_mask
@@ -16,7 +16,14 @@ def build_composite(aoi_geojson: dict, window: DateWindow, sensor: str, max_clou
     # expects the inner geometry object.
     geometry = aoi_geojson.get("geometry", aoi_geojson) if isinstance(aoi_geojson, dict) else aoi_geojson
     region = ee.Geometry(geometry)
-    collection = ee.ImageCollection(spec.collection).filterBounds(region).filterDate(str(window.start), str(window.end))
+    # Earth Engine's filterDate end is exclusive, so passing the window end
+    # straight through drops any scene acquired on that day. A Landsat 9 fetch
+    # for 22 Oct - 5 Nov 2026 returned nothing while LC09_142044_20261105 sat
+    # on the final day at 0.42 per cent cloud, and the failure read as missing
+    # imagery. DateWindow is inclusive at both ends everywhere else in the
+    # project, so the end is advanced by a day here to match.
+    collection = (ee.ImageCollection(spec.collection).filterBounds(region)
+                  .filterDate(str(window.start), str(window.end + timedelta(days=1))))
     if sensor == "S2":
         cloud = ee.ImageCollection("COPERNICUS/S2_CLOUD_PROBABILITY").filterBounds(region).filterDate(str(window.start), str(window.end))
         collection = ee.Join.saveFirst("cloud_mask").apply(

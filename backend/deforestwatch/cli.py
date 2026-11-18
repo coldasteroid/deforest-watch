@@ -59,8 +59,23 @@ def fetch(aoi: str = typer.Option(..., "--aoi"), date_value: str = typer.Option(
     typer.echo(result.model_dump_json(indent=2))
 
 
+def _checkpoint_threshold(path: Path) -> float | None:
+    """The decision threshold a checkpoint was selected at, if it records one."""
+    try:
+        import torch
+
+        meta = torch.load(path, map_location="cpu", weights_only=False).get("meta", {})
+        value = meta.get("best_val_threshold")
+        return float(value) if value is not None else None
+    except Exception:  # noqa: BLE001 - an unreadable meta block is not fatal
+        return None
+
+
 @app.command()
-def detect(aoi: str = typer.Option(..., "--aoi"), date_value: str = typer.Option(..., "--date"), model: str = typer.Option("none", "--model")) -> None:
+def detect(aoi: str = typer.Option(..., "--aoi"), date_value: str = typer.Option(..., "--date"),
+           model: str = typer.Option("none", "--model"),
+           threshold: float = typer.Option(None, "--threshold",
+                                           help="override the detection probability threshold")) -> None:
     """Run the baseline detector through the configured imagery backend."""
     end = date.fromisoformat(date_value)
     current = _window(date_value)
@@ -82,7 +97,22 @@ def detect(aoi: str = typer.Option(..., "--aoi"), date_value: str = typer.Option
         checkpoint = Path(model)
         if not checkpoint.is_file():
             raise typer.BadParameter(f"checkpoint not found: {checkpoint}", param_hint="--model")
-        detect_request = detect_request.model_copy(update={"model_path": checkpoint})
+        update: dict = {"model_path": checkpoint}
+        # A segmentation head trained on a fraction of a per cent of positive
+        # pixels is not calibrated around 0.5, and training records the
+        # threshold the checkpoint was selected at. Using the contract default
+        # instead would score the model at an operating point it was never
+        # chosen for. --threshold still overrides.
+        if threshold is None:
+            stored = _checkpoint_threshold(checkpoint)
+            if stored is not None:
+                update["prob_threshold"] = stored
+                typer.echo(f"using checkpoint threshold {stored}", err=True)
+        else:
+            update["prob_threshold"] = threshold
+        detect_request = detect_request.model_copy(update=update)
+    elif threshold is not None:
+        detect_request = detect_request.model_copy(update={"prob_threshold": threshold})
     result = run_detector(detect_request)
     typer.echo(json.dumps({"run_id": str(req.run_id), "detections": len(result.detections),
                            "overlay": str(result.overlay_png), "loss_mask": str(result.loss_mask_tif)}))

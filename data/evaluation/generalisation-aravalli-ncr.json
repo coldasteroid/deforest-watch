@@ -1,0 +1,26 @@
+{
+  "aoi": "aravalli-ncr",
+  "split": "all",
+  "chips": 242,
+  "threshold": 0.99,
+  "metrics": {
+    "iou": 0.000968376456347405,
+    "f1": 0.0019348792212111133,
+    "precision": 0.0009691976860405246,
+    "recall": 0.5333333333333333,
+    "pixel_accuracy": 0.9979184363499161
+  },
+  "evidence": "held_out_region",
+  "reference_positive_pixels": 60,
+  "predicted_positive_pixels": 33017,
+  "predicted_area_ha": 330.17,
+  "false_alarm_rate": 0.002082,
+  "ndvi_baseline_comparison": {
+    "predicted_pixels": 861298,
+    "predicted_area_ha": 8612.98,
+    "false_alarm_rate": 0.054307,
+    "rule": "ndvi_drop>=0.20 inside the forest mask (baseline_ndvi>=0.35)"
+  },
+  "interpretation": "Neither detector transfers to semi-arid scrub, but the U-Net raises 26x fewer false alarms than the NDVI baseline (0.21% of pixels against 5.43%). Mean baseline NDVI over this AOI is 0.381 against a forest gate of 0.35, so most of the site passes a gate meant to select forest; the Hasdeo FOREST_NDVI_MIN of 0.50 would exclude nearly all of it. Read this as the S9 metric drop: the learned model degrades more gracefully than the threshold it replaces, and neither should be run on this biome without recalibrating the forest gate.",
+  "label_caveat": "Hansen maps almost nothing here (0.4% mean treecover2000), so the reference is near-empty rather than confidently negative. Some predictions may be real land change, such as quarrying, that Hansen does not record. The comparison between the two detectors is sound because both are scored against the same reference."
+}

@@ -62,6 +62,34 @@ Updated 2026-11-18.
   from the chip index. The index is now built on a leakage-safe spatial split
   (see below), so the report is a valid regression reference against synthetic
   labels; it is still not field evidence.
+- First live operational run with a trained model (2026-11-18). `dw detect`
+  ran against Sentinel-2 imagery for 2026-11-15 (0.31% cloud; 11 scenes under
+  the 20% gate since September, so the earlier "no clear acquisition" note is
+  superseded) and produced 9 detections over 196.96 ha, against a published
+  annual increment of about 133 ha. The run is not yet persisted, because the
+  database gate is still open, and the detections are unvalidated.
+- That run found two defects that fixture runs and the unit tests had never
+  touched, both of which failed silently rather than erroring:
+  1. `to_reflectance` and `detector.read_raster` chose their scale divisor
+     from each array's own maximum, so a baseline composite peaking at 10596
+     was divided by 255 while its current composite peaking at 9756 was
+     divided by 10000. The baseline saturated to 1.0 everywhere and the run
+     reported "0 detections" as though nothing had been cleared. The divisor
+     now comes from the dtype. The 28 rasters behind the trained model were
+     audited: none exceeds 10000, so no training data was affected.
+  2. Earth Engine rejects a download request over 50 MB, and a 4-band float64
+     tile costs 32 bytes per pixel, so the 2048 px default asked for 134 MB.
+     Whether a fetch worked depended on how the AOI's extent happened to
+     divide: `hasdeo-pekb` fitted at about 40 MB per tile, `aravalli-ncr` did
+     not at about 83 MB, so the S9 generalisation site could not be fetched at
+     all. Tiles now default to 1024 px and an oversized request is halved and
+     retried.
+  `dw detect --model` was also accepted and then dropped, so every CLI run
+  had silently used the NDVI baseline whatever checkpoint was named, and the
+  detection threshold now comes from the checkpoint's own
+  `meta.best_val_threshold` rather than the contract default of 0.5.
+- Note that the Phase 9 `live_2026_run` gate requires a ready database as
+  well as live imagery, so it stays open on the database, not on imagery.
 - Real training data from Earth Engine (2026-11-18). The project no longer
   depends on hand-drawn labels to train at all: §4.13 source A is implemented
   against live imagery. `scripts/fetch_gee_training_data.py` pairs Sentinel-2

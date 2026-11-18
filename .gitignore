@@ -20,6 +20,7 @@ data/labels/feedback/
 # and ml/build_dataset.py --source gee.
 data/gee/
 data/dataset-gee*/
+data/dataset-aravalli/
 !data/aoi/
 !data/validation/
 

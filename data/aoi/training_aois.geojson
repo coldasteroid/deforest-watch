@@ -1,0 +1,234 @@
+{
+  "type": "FeatureCollection",
+  "note": "Training-only AOIs for the Hansen weak-label dataset. These are NOT monitored AOIs and are never seeded into the database. Boxes are derived from Hansen loss centroids, not surveyed boundaries. The Aravalli AOI is deliberately absent: it is the held-out S9 generalisation site and must not appear in any training split.",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "hansen-hotspot-a",
+        "name": "Hansen 2024-25 loss cluster at 23.430N 83.703E",
+        "purpose": "U-Net training region only; not a monitored AOI",
+        "selected_by": "loss-weighted centroid of UMD/hansen/global_forest_change_2025_v1_13 lossyear 24-25, treecover2000>=10",
+        "hansen_loss_2024_2025_ha": 134.9,
+        "geometry_status": "approximate-derived-from-hansen-centroid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              83.60310000000001,
+              23.330499999999997
+            ],
+            [
+              83.8031,
+              23.330499999999997
+            ],
+            [
+              83.8031,
+              23.5305
+            ],
+            [
+              83.60310000000001,
+              23.5305
+            ],
+            [
+              83.60310000000001,
+              23.330499999999997
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "hansen-hotspot-b",
+        "name": "Hansen 2024-25 loss cluster at 23.861N 84.221E",
+        "purpose": "U-Net training region only; not a monitored AOI",
+        "selected_by": "loss-weighted centroid of UMD/hansen/global_forest_change_2025_v1_13 lossyear 24-25, treecover2000>=10",
+        "hansen_loss_2024_2025_ha": 56.5,
+        "geometry_status": "approximate-derived-from-hansen-centroid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              84.12140000000001,
+              23.761
+            ],
+            [
+              84.3214,
+              23.761
+            ],
+            [
+              84.3214,
+              23.961000000000002
+            ],
+            [
+              84.12140000000001,
+              23.961000000000002
+            ],
+            [
+              84.12140000000001,
+              23.761
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "hansen-hotspot-c",
+        "name": "Hansen 2024-25 loss cluster at 22.366N 83.298E",
+        "purpose": "U-Net training region only; not a monitored AOI",
+        "selected_by": "loss-weighted centroid of UMD/hansen/global_forest_change_2025_v1_13 lossyear 24-25, treecover2000>=10",
+        "hansen_loss_2024_2025_ha": 50.4,
+        "geometry_status": "approximate-derived-from-hansen-centroid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              83.1982,
+              22.266199999999998
+            ],
+            [
+              83.39819999999999,
+              22.266199999999998
+            ],
+            [
+              83.39819999999999,
+              22.4662
+            ],
+            [
+              83.1982,
+              22.4662
+            ],
+            [
+              83.1982,
+              22.266199999999998
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "hansen-hotspot-d",
+        "name": "Hansen 2024-25 loss cluster at 21.887N 83.811E",
+        "purpose": "U-Net training region only; not a monitored AOI",
+        "selected_by": "loss-weighted centroid of UMD/hansen/global_forest_change_2025_v1_13 lossyear 24-25, treecover2000>=10",
+        "hansen_loss_2024_2025_ha": 43.5,
+        "geometry_status": "approximate-derived-from-hansen-centroid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              83.71130000000001,
+              21.787
+            ],
+            [
+              83.9113,
+              21.787
+            ],
+            [
+              83.9113,
+              21.987000000000002
+            ],
+            [
+              83.71130000000001,
+              21.987000000000002
+            ],
+            [
+              83.71130000000001,
+              21.787
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "hansen-hotspot-e",
+        "name": "Hansen 2024-25 loss cluster at 22.680N 81.787E",
+        "purpose": "U-Net training region only; not a monitored AOI",
+        "selected_by": "loss-weighted centroid of UMD/hansen/global_forest_change_2025_v1_13 lossyear 24-25, treecover2000>=10",
+        "hansen_loss_2024_2025_ha": 40.0,
+        "geometry_status": "approximate-derived-from-hansen-centroid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              81.68690000000001,
+              22.5798
+            ],
+            [
+              81.8869,
+              22.5798
+            ],
+            [
+              81.8869,
+              22.7798
+            ],
+            [
+              81.68690000000001,
+              22.7798
+            ],
+            [
+              81.68690000000001,
+              22.5798
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "slug": "hansen-hotspot-f",
+        "name": "Hansen 2024-25 loss cluster at 23.904N 82.352E",
+        "purpose": "U-Net training region only; not a monitored AOI",
+        "selected_by": "loss-weighted centroid of UMD/hansen/global_forest_change_2025_v1_13 lossyear 24-25, treecover2000>=10",
+        "hansen_loss_2024_2025_ha": 39.9,
+        "geometry_status": "approximate-derived-from-hansen-centroid"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              82.2522,
+              23.804
+            ],
+            [
+              82.45219999999999,
+              23.804
+            ],
+            [
+              82.45219999999999,
+              24.004
+            ],
+            [
+              82.2522,
+              24.004
+            ],
+            [
+              82.2522,
+              23.804
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

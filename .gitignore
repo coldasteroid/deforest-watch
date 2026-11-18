@@ -15,6 +15,11 @@ data/dataset/
 data/demo/
 data/backfill/
 data/labels/feedback/
+# Earth Engine downloads and the chip sets built from them: gigabytes of
+# GeoTIFF and .npy, all regenerable with scripts/fetch_gee_training_data.py
+# and ml/build_dataset.py --source gee.
+data/gee/
+data/dataset-gee*/
 !data/aoi/
 !data/validation/
 
@@ -24,6 +29,7 @@ models/*.pth
 models/*.onnx
 models/*.ckpt
 models/*.metrics.json
+models/*.eval.json
 
 # python
 __pycache__/

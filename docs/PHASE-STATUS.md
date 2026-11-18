@@ -1,6 +1,6 @@
 # DeforestWatch phase status
 
-Updated 2026-10-04.
+Updated 2026-11-18.
 
 ## Complete locally
 
@@ -59,9 +59,58 @@ Updated 2026-10-04.
   renderable RGBA artifact with transparent background and tier-colored
   detection pixels.
 - Baseline metrics report: `data/dataset/baseline_metrics.json` is generated
-  from the chip index. The bundled synthetic fixture now has positive chips in
-  all three splits; because its fallback is temporal, it is still only a
-  smoke/reference report, not a leakage-safe benchmark.
+  from the chip index. The index is now built on a leakage-safe spatial split
+  (see below), so the report is a valid regression reference against synthetic
+  labels; it is still not field evidence.
+- Real training data from Earth Engine (2026-11-18). The project no longer
+  depends on hand-drawn labels to train at all: §4.13 source A is implemented
+  against live imagery. `scripts/fetch_gee_training_data.py` pairs Sentinel-2
+  dry-season composites with a Hansen Global Forest Change loss mask on the
+  same 10 m grid, `ml/build_dataset.py --source gee` builds chips from them,
+  and `scripts/check_label_quality.py` measures how far each region's labels
+  are actually supported by the imagery. Training AOIs live in
+  `data/aoi/training_aois.geojson` and are never seeded into the database;
+  the Aravalli AOI is excluded so it stays the held-out S9 site.
+  These are **weak labels**: every metric from them measures agreement with
+  Hansen, not field accuracy. See `docs/EVALUATION.md` for the three measured
+  deviations from the specification (Hansen asset version, tree-cover gate,
+  and the composite pair that has to straddle the loss year) and
+  `docs/MODEL-CARD.md` for results.
+- `scripts/export_hansen_reference.py` writes the per-year Hansen polygons
+  that `scripts/compare_hansen.py` always expected on disk, so the Phase 10
+  Hansen comparison now has its independent input. Exported areas agree with
+  Earth Engine to two decimals (114.19 against 114.18 ha for 2024; 111.87
+  against 111.87 ha for 2025).
+- `ml/evaluate.py` now carries the validation threshold onto the test split
+  instead of tuning a threshold on test and reporting that split's score, and
+  excludes `ignore` pixels, whose class the builder has declared unknown. It
+  also reports per-region test metrics (`--by-region`), because label quality
+  varies enough between clearing morphologies that one pooled number hides
+  where the detector works.
+- Dataset split rebuilt (2026-11-18). `ml/build_dataset.py` now assigns splits
+  by spatial block from `(region, row, col)`, so the same ground keeps its
+  split across every year and each region is stratified internally (a global
+  stratification let one region's positives land entirely in test, scoring the
+  detector on a morphology it had never trained on); tiles the model dataset
+  with no chip overlap, so blocks
+  are pixel-disjoint instead of sharing a 32 px border across split
+  boundaries; buffers boundaries automatically if a non-zero overlap is
+  requested; stratifies whole blocks toward 60/20/20 of labelled pixels; and
+  restricts the model dataset to Sentinel-2 years per §3.6 rule 1. The
+  temporal fallback is now opt-in (`--allow-temporal-fallback`), warns, and
+  tags affected rows. Verified: 0 grid positions appear in more than one
+  split, all 25 positions hold their split across all 8 years, and positives
+  are present in train/val/test with no fallback. The synthetic pit touches
+  only 4 of 25 positions, so positive *pixels* remain skewed — a limit of the
+  fixture, not of the split.
+- Fixture bug found and fixed (2026-11-18): `scripts/make_demo_data.py`
+  rewrites `data/demo/hasdeo-pekb/truth/pits.geojson` with only the years it is
+  asked for, and an earlier single-year run had left just the 2026 feature.
+  Any dataset rebuild therefore produced zero positive chips for 2019–2025
+  while the committed index still showed positives from an older truth file.
+  The fixture was regenerated for 2013–2026 and the truth file now holds all
+  14 features. Re-running `make_demo_data.py` for a subset of years will
+  silently truncate it again.
 - Evaluation methods and the production evidence requirements are recorded in
   `docs/EVALUATION.md`.
 - Cold-start and live/fixture setup instructions are recorded in
@@ -128,12 +177,18 @@ Updated 2026-10-04.
 
 ## Gates still open
 
-1. Obtain valid credentials for the running PostgreSQL service, confirm the
-   PostGIS extension, then run the real Alembic migration plus seed checks.
+1. Create the `dw` role and `deforestwatch` database on the running
+   PostgreSQL 18 service, then run the real Alembic migration plus seed
+   checks. PostGIS 3.7.0 was installed into that server on 2026-11-18 and the
+   extension files are present; only the role, database, `CREATE EXTENSION`
+   and migration remain, and they need the `postgres` superuser password.
+   Note that `infra/docker-compose.yml` still pins `postgis/postgis:16-3.4`,
+   so the Docker path and this machine are now on different versions.
 2. Verify a current operational window when a sufficiently clear Sentinel-2
    acquisition becomes available, and complete a live Landsat fallback fetch.
-3. Replace synthetic truth with at least 150 reviewed Hasdeo labels and use a
-   genuinely leakage-safe spatial split with positive examples in each split.
+3. Replace synthetic truth with at least 150 reviewed Hasdeo labels. The
+   leakage-safe spatial split itself is done (see above); what is missing is
+   labels spread over enough blocks for the positive pixels to stratify.
 4. Replace the synthetic CPU smoke checkpoint with a reviewed-label U-Net,
    evaluate it against the baseline, and select a production model. The
    runtime now imports Torch and the smoke run is documented in

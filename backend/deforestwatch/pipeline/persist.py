@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..alert.dedupe import overlaps
 from ..alert.notify import publish_alert_created
-from ..db.models import Alert, AlertStatus, AlertTier, Detection, Run, RunStatus
+from ..db.models import Alert, AlertStatus, AlertTier, Detection, Run, RunStatus, Scene
 from .run import PipelineExecution
 
 
@@ -30,6 +30,30 @@ def persist_execution(session: Session, run: Run, execution: PipelineExecution) 
     run.overlay_bounds = result.overlay_bounds
     run.finished_at = now
     run.duration_s = (now - (run.started_at or now)).total_seconds()
+
+    # Record which imagery the run actually looked at. Without this a stored
+    # alert cannot say what period it covers or which scenes produced it, so
+    # nobody acting on it can check the evidence or reproduce the comparison.
+    # The schema has always had these columns and the scene table; nothing
+    # populated them.
+    fetched = execution.fetched
+    windows = {
+        "current": ("current_start", "current_end", "current_tif"),
+        "baseline_recent": ("baseline_start", "baseline_end", "baseline_recent_tif"),
+        "baseline_seasonal": ("seasonal_start", "seasonal_end", "baseline_seasonal_tif"),
+    }
+    for role, meta in (getattr(fetched, "scenes", None) or {}).items():
+        start_field, end_field, path_field = windows.get(role, (None, None, None))
+        if start_field:
+            setattr(run, start_field, meta.acquired_from)
+            setattr(run, end_field, meta.acquired_to)
+        session.add(Scene(
+            run_id=run.id, role=role, sensor=meta.sensor,
+            scene_ids=list(meta.scene_ids or []), cloud_pct=meta.cloud_pct_mean,
+            window_start=meta.acquired_from, window_end=meta.acquired_to,
+            tif_path=str(getattr(fetched, path_field, "") or "") if path_field else None,
+            from_cache=bool(getattr(fetched, "from_cache", False)),
+        ))
 
     existing = session.query(Alert).filter_by(aoi_id=run.aoi_id).all()
     created = 0

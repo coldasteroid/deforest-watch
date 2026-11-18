@@ -73,7 +73,17 @@ def detect(aoi: str = typer.Option(..., "--aoi"), date_value: str = typer.Option
     from .preprocess.run import preprocess
     fetch_result = fetch_imagery(req)
     pre = preprocess(PreprocessRequest(run_id=req.run_id, fetch=fetch_result))
-    result = run_detector(DetectRequest(run_id=req.run_id, pre=pre))
+    # --model was accepted and then dropped, so every run silently used the
+    # NDVI baseline whatever was asked for. "none" keeps that baseline; any
+    # other value is a checkpoint path and must exist, rather than falling
+    # back to the baseline and reporting the result as if the model had run.
+    detect_request = DetectRequest(run_id=req.run_id, pre=pre)
+    if model != "none":
+        checkpoint = Path(model)
+        if not checkpoint.is_file():
+            raise typer.BadParameter(f"checkpoint not found: {checkpoint}", param_hint="--model")
+        detect_request = detect_request.model_copy(update={"model_path": checkpoint})
+    result = run_detector(detect_request)
     typer.echo(json.dumps({"run_id": str(req.run_id), "detections": len(result.detections),
                            "overlay": str(result.overlay_png), "loss_mask": str(result.loss_mask_tif)}))
 

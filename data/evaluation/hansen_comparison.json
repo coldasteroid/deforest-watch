@@ -1,0 +1,32 @@
+{
+  "aoi": "hasdeo-pekb",
+  "years": [
+    2024,
+    2025
+  ],
+  "model": "models/weak-label-unet-7region.pt",
+  "threshold": 0.99,
+  "results": [
+    {
+      "year": 2024,
+      "detected_ha": 134.4494,
+      "reference_ha": 114.1905,
+      "precision": 0.688381,
+      "recall": 0.810509,
+      "iou": 0.592952,
+      "published_increment_ha": 150
+    },
+    {
+      "year": 2025,
+      "detected_ha": 70.4778,
+      "reference_ha": 111.874,
+      "precision": 0.714113,
+      "recall": 0.449873,
+      "iou": 0.381215,
+      "published_increment_ha": 133
+    }
+  ],
+  "NOT_HELD_OUT": "The model was trained on Hansen labels for this AOI and these years. Of the 162 hasdeo-pekb chips, 108 are in the train split and 22 in validation; only 32 are held out. This comparison therefore measures how well the detector reproduces the reference it was fitted to, not how it performs on unseen ground. Read it as an end-to-end pipeline check and a sanity test of the polygon output, not as evidence of accuracy.",
+  "scale_note": "These are polygon-union IoU figures and are not comparable with the pixel-level IoU of 0.1965 in the model card: unioning detections into polygons is a coarser, more forgiving comparison than scoring every pixel.",
+  "reference_caveat": "Hansen GFC v1_13 is a weak reference that under-records this site; see docs/EVALUATION.md."
+}

@@ -61,6 +61,13 @@ class Settings(BaseSettings):
     # tile costs 32 bytes per pixel, so 2048 px asks for 134 MB. 1024 px asks
     # for about 34 MB and fits; oversized requests are split further at
     # runtime by ingest.download.
+    # Compositing windows for a scheduled run. The current and recent windows
+    # stay short so an alert refers to a recent change; the seasonal baseline
+    # looks a year back, where a narrow window often holds no scene under the
+    # cloud gate, so it is wider.
+    run_window_days: int = 21
+    seasonal_window_days: int = 75
+
     download_tile_px: int = 1024
     max_direct_download_km2: float = 3000.0
     log_level: str = "INFO"

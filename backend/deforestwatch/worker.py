@@ -4,6 +4,7 @@ The database-backed claim function is kept separate from APScheduler so it can
 be tested and run once from an operator command without starting a daemon.
 """
 import argparse
+import logging
 from datetime import date, datetime, timedelta, timezone
 
 from geoalchemy2.shape import to_shape
@@ -11,11 +12,15 @@ from shapely.geometry import mapping
 from sqlalchemy.exc import SQLAlchemyError
 
 from .config import get_settings
+from .ingest.composite import NoClearSceneError
 from .contracts import DateWindow, FetchRequest
 from .db.base import SessionLocal
 from .db.models import Aoi, Run, RunStatus
 from .pipeline.persist import persist_execution
 from .pipeline.run import PipelineRequest, execute_pipeline
+
+
+logger = logging.getLogger(__name__)
 
 
 def dispatch_due_aois(now: datetime | None = None) -> int:
@@ -32,13 +37,22 @@ def dispatch_due_aois(now: datetime | None = None) -> int:
     return created
 
 
-def _fetch_request_for(run: Run, aoi: Aoi, today: date | None = None) -> FetchRequest:
+def _fetch_request_for(run: Run, aoi: Aoi, today: date | None = None,
+                       window_days: int | None = None, seasonal_days: int | None = None) -> FetchRequest:
+    settings = get_settings()
+    window = window_days or settings.run_window_days
+    seasonal_window = seasonal_days or settings.seasonal_window_days
     end = run.current_end or (today or date.today())
-    start = run.current_start or (end - timedelta(days=14))
+    start = run.current_start or (end - timedelta(days=window))
     recent_end = start - timedelta(days=1)
-    recent_start = recent_end - timedelta(days=14)
+    recent_start = recent_end - timedelta(days=window)
+    # The seasonal baseline looks a year back, where a fortnight-wide window
+    # frequently holds no scene under the cloud gate: the first scheduled run
+    # failed on "no clear S2 scene in 2025-10-20..2025-11-03", the monsoon tail.
+    # A wider window gives the compositor something to work with, and the run
+    # degrades to the recent baseline alone rather than failing outright.
     seasonal_end = recent_end.replace(year=recent_end.year - 1)
-    seasonal_start = seasonal_end - timedelta(days=14)
+    seasonal_start = seasonal_end - timedelta(days=seasonal_window)
     return FetchRequest(
         run_id=run.id, aoi_id=aoi.id, aoi_geojson=mapping(to_shape(aoi.geom)),
         current=DateWindow(start=start, end=end),
@@ -67,7 +81,19 @@ def process_one_queued_run() -> bool:
         run_id = run.id
 
     try:
-        execution = execute_pipeline(request)
+        try:
+            execution = execute_pipeline(request)
+        except NoClearSceneError as error:
+            # The seasonal baseline is a nice-to-have: preprocess falls back to
+            # the recent baseline when it is absent. Losing a whole run because
+            # the same fortnight last year was cloudy would stop the monitoring
+            # cadence for reasons that have nothing to do with the current
+            # imagery, so retry without it before giving up.
+            if request.fetch.baseline_seasonal is None:
+                raise
+            logger.warning("seasonal baseline unavailable (%s); retrying on the recent baseline alone", error)
+            degraded = request.fetch.model_copy(update={"baseline_seasonal": None})
+            execution = execute_pipeline(PipelineRequest(fetch=degraded, aoi_slug=request.aoi_slug))
         with SessionLocal.begin() as session:
             persist_execution(session, session.get(Run, run_id), execution)
     except Exception as exc:

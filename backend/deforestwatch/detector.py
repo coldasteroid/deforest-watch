@@ -24,10 +24,14 @@ def read_raster(data: bytes, filename: str = "") -> Raster:
 
             with rasterio.MemoryFile(data) as mem:
                 with mem.open() as src:
-                    values = src.read().astype(np.float32)
-                    if values.max(initial=0) > 1.0:
-                        values /= 10000.0 if values.max(initial=0) <= 10000 else 255.0
-                    values = np.clip(values, 0, 1)
+                    raw = src.read()
+                    # Same scaling rule as preprocess.normalize.to_reflectance:
+                    # the divisor comes from the dtype, never from the array's
+                    # maximum, so two rasters of one sensor cannot end up on
+                    # different scales because one holds a brighter pixel.
+                    from .preprocess.normalize import to_reflectance
+
+                    values = to_reflectance(raw)
                     b = src.bounds
                     transform = (b.left, b.bottom, b.right, b.top)
                     return Raster(values, transform)

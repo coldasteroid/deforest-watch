@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from uuid import uuid4
 
@@ -38,9 +38,17 @@ def _aoi_feature(slug: str) -> dict:
     raise typer.BadParameter(f"unknown AOI: {slug}")
 
 
-def _window(value: str) -> DateWindow:
+def _window(value: str, days: int = 14) -> DateWindow:
+    """A `days`-long window ending on `value`.
+
+    This used to be `end.replace(day=max(1, end.day - days))`, which cannot
+    cross a month boundary: asking for 5 November gave a four-day window
+    starting on the 1st, and any date in the first fortnight of a month was
+    silently truncated. A live Landsat 9 fetch failed on exactly that, since
+    its 16-day revisit rarely puts a scene inside four days.
+    """
     end = date.fromisoformat(value)
-    return DateWindow(start=end.replace(day=max(1, end.day - 14)), end=end)
+    return DateWindow(start=end - timedelta(days=days), end=end)
 
 
 @app.command()

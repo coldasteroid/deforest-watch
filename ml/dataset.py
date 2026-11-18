@@ -26,13 +26,19 @@ class ChipDataset:
         image = np.load(row.path).astype("float32")
         mask_path = Path(row.mask_path)
         mask = np.load(mask_path).astype("float32") if mask_path.exists() else np.zeros(image.shape[-2:], dtype="float32")
-        ignore = np.zeros_like(mask, dtype=bool)
+        # Pixels whose class is genuinely unknown, so the loss skips them. The
+        # builder writes these for weak labels, where a boundary is uncertain
+        # because the label product is coarser than the imagery.
+        ignore = np.zeros_like(mask, dtype="float32")
+        ignore_path = getattr(row, "ignore_path", None)
+        if isinstance(ignore_path, str) and Path(ignore_path).exists():
+            ignore = np.load(ignore_path).astype("float32")
         if self.augment:
             if self.rng.integers(0, 2):
-                image, mask = image[..., ::-1], mask[..., ::-1]
+                image, mask, ignore = image[..., ::-1], mask[..., ::-1], ignore[..., ::-1]
             if self.rng.integers(0, 2):
-                image, mask = image[..., ::-1, :], mask[..., ::-1, :]
-        return image.copy(), mask[None, ...].copy(), ignore[None, ...]
+                image, mask, ignore = image[..., ::-1, :], mask[..., ::-1, :], ignore[..., ::-1, :]
+        return image.copy(), mask[None, ...].copy(), ignore[None, ...].copy()
 
 
 def compute_norm_stats(index_csv: str | Path, split: str = "train") -> dict:

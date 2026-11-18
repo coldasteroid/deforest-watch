@@ -57,7 +57,11 @@ class Settings(BaseSettings):
     worker_concurrency: int = 1
     retry_after_hours: int = 48
     chip_retention_days: int = 30
-    download_tile_px: int = 2048
+    # Earth Engine caps one download request at 50 MB, and a 4-band float64
+    # tile costs 32 bytes per pixel, so 2048 px asks for 134 MB. 1024 px asks
+    # for about 34 MB and fits; oversized requests are split further at
+    # runtime by ingest.download.
+    download_tile_px: int = 1024
     max_direct_download_km2: float = 3000.0
     log_level: str = "INFO"
 

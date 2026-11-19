@@ -25,19 +25,35 @@ export function MapPage() {
   const liveSnapshot = useLiveSnapshot();
   const ws = useWs(selectedAoiId ?? undefined);
 
+  // Open on the region that actually has a run, not on whichever AOI happens
+  // to sort first: with no selection the latest-run query returns the newest
+  // run across all regions, so its AOI is the one worth showing. Falling back
+  // to the first active region keeps a sensible default before that resolves.
   useEffect(() => {
-    if (!selectedAoiId && aois.data?.items[0]) setSelectedAoiId(aois.data.items[0].id);
-  }, [aois.data, selectedAoiId, setSelectedAoiId]);
+    // Wait for the latest-run query to settle: choosing a fallback while it is
+    // still pending lands on a region that has no runs and the selection is
+    // then never revisited.
+    if (selectedAoiId || !aois.data?.items.length || latestRun.isLoading) return;
+    const fromLatestRun = latestRun.data?.aoi_id
+      && aois.data.items.find((aoi) => aoi.id === latestRun.data?.aoi_id)?.id;
+    const firstActive = aois.data.items.find((aoi) => aoi.active)?.id;
+    setSelectedAoiId(fromLatestRun || firstActive || aois.data.items[0].id);
+  }, [aois.data, latestRun.data, latestRun.isLoading, selectedAoiId, setSelectedAoiId]);
 
   if (aois.isLoading || alerts.isLoading) return <LoadingState rows={8} />;
   if (aois.isError || alerts.isError) return <ErrorState message="Dashboard data could not be loaded." onRetry={() => void aois.refetch()} />;
   if (!aois.data?.items.length) return <EmptyState title="No regions yet." action={<button className="rounded-md bg-slate-900 px-3 py-2 text-sm text-white">Create region</button>} />;
-  const displayedRun = liveSnapshot.data?.run ?? latestRun.data;
+  // The run card and the alert polygons come from the database, never from
+  // /api/live/snapshot. That endpoint runs an unfiltered NDVI-drop comparison
+  // over the newest cached composite -- no forest mask, no model, no patch
+  // tiering -- and used to replace both: its blob count stood in for the
+  // detector's own result, and its blobs replaced the stored alert polygons on
+  // the map. Its imagery rasters below are real and still drawn as layers.
+  const displayedRun = latestRun.data;
   const liveBounds = liveSnapshot.data?.overlay_bounds
     ? [[liveSnapshot.data.overlay_bounds[0], liveSnapshot.data.overlay_bounds[1]], [liveSnapshot.data.overlay_bounds[2], liveSnapshot.data.overlay_bounds[3]]] as [[number, number], [number, number]]
     : undefined;
-  const liveHasDetections = Boolean(liveSnapshot.data?.detections.features.length);
-  const displayedAlertGeoJson = liveHasDetections ? liveSnapshot.data?.detections : geoJson.data;
+  const displayedAlertGeoJson = geoJson.data;
 
   return (
     <div className="grid h-[calc(100vh-56px)] grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)]">
@@ -70,16 +86,20 @@ export function MapPage() {
         </div>
         <div className="mt-5 rounded-md border border-border p-3">
           <div className="mb-2 text-sm font-semibold">Latest run</div>
-          {liveSnapshot.data && <div className="mb-2 rounded bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">Live GEE snapshot</div>}
           {displayedRun ? (
             <div className="space-y-2 text-sm">
               <RunStatusBadge status={displayedRun.status} />
               <div>{displayedRun.aoi_name}</div>
-              <div className="text-muted">{liveSnapshot.data ? 'Earth Engine-derived composite' : fmtDateTime(displayedRun.started_at)}</div>
+              <div className="text-muted">{fmtDateTime(displayedRun.started_at)}</div>
               <div>Cloud {maybe(displayedRun.cloud_pct_mean, '%')} · Detections {maybe(displayedRun.detections_count)}</div>
+              {displayedRun.model_version && <div className="text-muted">Model {displayedRun.model_version}</div>}
             </div>
           ) : <div className="text-sm text-muted">No successful run yet.</div>}
-          {liveSnapshot.data && !liveHasDetections && <div className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900">Live detector returned 0 patches; demo alert polygons remain visible for presentation.</div>}
+          {liveSnapshot.data && (
+            <div className="mt-2 border-t border-border pt-2 text-xs text-muted">
+              Imagery layers from the newest cached composite ({liveSnapshot.data.aoi_name}). Unfiltered index imagery, not detector output.
+            </div>
+          )}
         </div>
         <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
           <div className="flex items-center gap-2 font-semibold"><AlertTriangle size={15} /> Separate disaster case study</div>

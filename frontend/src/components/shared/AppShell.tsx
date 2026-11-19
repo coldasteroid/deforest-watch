@@ -14,9 +14,11 @@ const nav = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const health = useHealth();
-  const demoMode = import.meta.env.VITE_ENABLE_MSW === 'true';
-  const label = demoMode ? 'Demo data mode' : health.isLoading ? 'Checking services' : health.isError ? 'API unavailable' : health.data?.status === 'ok' ? 'Services healthy' : 'Services degraded';
-  const tone = demoMode || health.isLoading ? 'border-amber-300 bg-amber-50 text-amber-900' : health.isError || health.data?.status === 'degraded' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-800';
+  // The badge must never report "healthy" while the mock handlers are serving
+  // the dashboard, or the UI would present fixtures as live results.
+  const mockApi = import.meta.env.VITE_ENABLE_MSW === 'true';
+  const label = mockApi ? 'Fixture API (not live)' : health.isLoading ? 'Checking services' : health.isError ? 'API unavailable' : health.data?.status === 'ok' ? 'Services healthy' : 'Services degraded';
+  const tone = mockApi || health.isLoading ? 'border-amber-300 bg-amber-50 text-amber-900' : health.isError || health.data?.status === 'degraded' ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-300 bg-emerald-50 text-emerald-800';
   return (
     <div className="min-h-screen bg-bg text-text">
       <header className="sticky top-0 z-40 border-b border-border bg-surface">

@@ -35,7 +35,7 @@ export const useUiStore = create<UiStore>()(
       setFocusAlertId: (id) => set({ focusAlertId: id }),
     }),
     {
-      name: 'dw_ui_live_demo',
+      name: 'dw_ui_layers',
       partialize: (state) => ({
         showLossOverlay: state.showLossOverlay,
         showSatellite: state.showSatellite,

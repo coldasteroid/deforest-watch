@@ -11,6 +11,11 @@ export function AnalyticsPage() {
   if (metrics.isError || timeseries.isError || alerts.isError) return <ErrorState message="Analytics could not be loaded." onRetry={() => void metrics.refetch()} />;
   if (!metrics.data || !timeseries.data) return <EmptyState title="No metrics available yet." />;
 
+  // The plotted range has to come from the data. A hardcoded "2013-2025" here
+  // claimed a Landsat era that the loaded series does not contain.
+  const years = timeseries.data.points.map((point) => new Date(point.t).getUTCFullYear()).filter(Number.isFinite);
+  const coverage = years.length ? (Math.min(...years) === Math.max(...years) ? `${years[0]}` : `${Math.min(...years)}-${Math.max(...years)}`) : '';
+
   const stats = [
     ['Forest loss detected', `${metrics.data.hectares_detected.toLocaleString('en-IN')} ha`, metrics.data.percent_of_aoi == null ? null : `${metrics.data.percent_of_aoi}% of this region`],
     ['CO2 equivalent', `${Math.round(metrics.data.co2e_tonnes).toLocaleString('en-IN')} t`, null],
@@ -32,9 +37,9 @@ export function AnalyticsPage() {
           ))}
         </div>
         <Card className="p-4">
-          <h2 className="text-base font-semibold">Cumulative forest loss, 2013-2025</h2>
+          <h2 className="text-base font-semibold">Cumulative forest loss{coverage && `, ${coverage}`}</h2>
           <div className="mt-3 h-[340px]"><LossTimeSeries points={timeseries.data.points} /></div>
-          <p className="mt-3 text-sm text-muted">Detected area is measured from Landsat 8 at 30 m for 2013-2016 and Sentinel-2 at 10 m from 2017. The published reference figure carries its own uncertainty.</p>
+          <p className="mt-3 text-sm text-muted">Detected area is measured from the imagery each run composited; the sensor and window are recorded on the run. Any published reference figure carries its own uncertainty.</p>
         </Card>
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <Card className="p-4"><h2 className="text-base font-semibold">Detections per run by severity</h2><div className="mt-3 h-[280px]"><AlertsPerRunBar alerts={alerts.data?.items ?? []} /></div></Card>

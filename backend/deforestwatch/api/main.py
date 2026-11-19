@@ -499,7 +499,11 @@ def latest_run(aoi_id: UUID | None = None, session: Session = Depends(db_session
     query = session.query(Run).filter(Run.status == "succeeded")
     if aoi_id:
         query = query.filter(Run.aoi_id == aoi_id)
-    run = query.order_by(Run.created_at.desc()).first()
+    # "Most recent" means most recently executed, not most recently inserted.
+    # A backfilled run carries the date of the imagery it looked at, so
+    # ordering by created_at would let an import of a years-old window outrank
+    # the run that actually went out today.
+    run = query.order_by(func.coalesce(Run.started_at, Run.created_at).desc()).first()
     if not run:
         raise HTTPException(404, "No successful run yet")
     return _run_detail(run, session)

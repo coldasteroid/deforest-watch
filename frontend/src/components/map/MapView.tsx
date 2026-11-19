@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { CircleMarker, GeoJSON, ImageOverlay, LayersControl, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
 import type { AlertOut, AoiOut, GeoJsonFeatureCollection, RunDetailOut } from '../../api/types';
 import { useUiStore } from '../../store/uiStore';
@@ -26,6 +26,24 @@ function FocusAlert({ alerts }: { alerts: AlertOut[] }) {
       setFocusAlertId(null);
     }
   }, [alerts, focusAlertId, map, setFocusAlertId]);
+  return null;
+}
+
+function FitSelectedAoi({ aois }: { aois: AoiOut[] }) {
+  const map = useMap();
+  const selectedAoiId = useUiStore((state) => state.selectedAoiId);
+  const flownTo = useRef<string | null>(null);
+  useEffect(() => {
+    // Only move when the selection itself changes, so panning and zooming by
+    // hand is not undone on every refetch.
+    if (!selectedAoiId || flownTo.current === selectedAoiId) return;
+    const aoi = aois.find((item) => item.id === selectedAoiId);
+    if (!aoi) return;
+    const bounds = L.geoJSON(aoi.geometry as never).getBounds();
+    if (!bounds.isValid()) return;
+    flownTo.current = selectedAoiId;
+    map.flyToBounds(bounds, { padding: [40, 40], duration: 0.8 });
+  }, [aois, map, selectedAoiId]);
   return null;
 }
 
@@ -78,6 +96,7 @@ export function MapView({
           </LayersControl.Overlay>
         )}
       </LayersControl>
+      <FitSelectedAoi aois={aois} />
       {aois.map((aoi) => (
         <GeoJSON key={aoi.id} data={aoi.geometry} style={{ color: aoi.active ? '#0f172a' : '#94a3b8', weight: 2, fillOpacity: 0.03 }} />
       ))}

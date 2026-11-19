@@ -41,3 +41,21 @@ class ModelRunner:
                 batch = torch.from_numpy(values[start:start + batch_size]).to(self.device)
                 outputs.append(torch.sigmoid(self.model(batch)).cpu().numpy()[:, 0])
         return np.concatenate(outputs, axis=0) if outputs else np.empty((0, *values.shape[-2:]), dtype="float32")
+
+
+def checkpoint_threshold(model_path: Path) -> float | None:
+    """The decision threshold a checkpoint was selected at, if it records one.
+
+    A segmentation head trained on a fraction of a per cent of positive pixels
+    is not calibrated around 0.5, so applying the contract default would score
+    the model at an operating point it was never chosen for.
+    """
+    try:
+        import torch
+
+        checkpoint = torch.load(Path(model_path), map_location="cpu", weights_only=False)
+        meta = checkpoint.get("meta", {}) if isinstance(checkpoint, dict) else {}
+        value = meta.get("best_val_threshold")
+        return float(value) if value is not None else None
+    except Exception:  # noqa: BLE001 - an unreadable meta block is not fatal
+        return None

@@ -69,14 +69,9 @@ def fetch(aoi: str = typer.Option(..., "--aoi"), date_value: str = typer.Option(
 
 def _checkpoint_threshold(path: Path) -> float | None:
     """The decision threshold a checkpoint was selected at, if it records one."""
-    try:
-        import torch
+    from .detect.runner import checkpoint_threshold
 
-        meta = torch.load(path, map_location="cpu", weights_only=False).get("meta", {})
-        value = meta.get("best_val_threshold")
-        return float(value) if value is not None else None
-    except Exception:  # noqa: BLE001 - an unreadable meta block is not fatal
-        return None
+    return checkpoint_threshold(path)
 
 
 @app.command()

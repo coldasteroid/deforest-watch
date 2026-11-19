@@ -9,6 +9,7 @@ from shapely.geometry import shape
 from sqlalchemy.orm import Session
 
 from ..alert.dedupe import overlaps
+from ..config import get_settings
 from ..alert.notify import publish_alert_created
 from ..db.models import Alert, AlertStatus, AlertTier, Detection, Run, RunStatus, Scene
 from .run import PipelineExecution
@@ -55,6 +56,10 @@ def persist_execution(session: Session, run: Run, execution: PipelineExecution) 
             from_cache=bool(getattr(fetched, "from_cache", False)),
         ))
 
+    # docs/02-BACKEND-SPEC.md: "Only `alert` and `critical` tiers become
+    # `alert` rows unless ALERT_ON_WATCH_TIER=true". The setting existed in
+    # config and was read by nothing, so the switch never did anything.
+    alert_on_watch = get_settings().alert_on_watch_tier
     existing = session.query(Alert).filter_by(aoi_id=run.aoi_id).all()
     created = 0
     deduped = 0
@@ -69,7 +74,7 @@ def persist_execution(session: Session, run: Run, execution: PipelineExecution) 
             tier=AlertTier(item.tier), chip_ids=item.chip_ids,
         )
         session.add(detection)
-        if item.tier == "watch":
+        if item.tier == "watch" and not alert_on_watch:
             continue
         duplicate = next((alert for alert in existing
                           if overlaps(to_shape(alert.geom), geometry)), None)

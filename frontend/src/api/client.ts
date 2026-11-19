@@ -106,5 +106,10 @@ export const compareImages = async (before: File, after: File, threshold = 0.2, 
   form.append('threshold', String(threshold));
   form.append('min_pixels', String(minPixels));
   form.append('pixel_size_m', String(pixelSizeM));
-  return (await api.post<ComparisonResult>('/compare', form)).data;
+  // A pair of Sentinel-2 composites is tens of megabytes each and the
+  // comparison runs over every pixel, so this request is nothing like the
+  // JSON calls the 12s client default is sized for: it was aborting mid-upload
+  // and surfacing as "images have matching dimensions", which is not what went
+  // wrong.
+  return (await api.post<ComparisonResult>('/compare', form, { timeout: 15 * 60_000 })).data;
 };

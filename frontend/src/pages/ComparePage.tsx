@@ -35,7 +35,12 @@ export function ComparePage() {
     if (!before || !after) { setError('Select both a before and an after image.'); return; }
     setLoading(true); setError(''); setResult(null);
     try { setResult(await compareImages(before, after, threshold, 25, pixelSizeM)); }
-    catch (err) { setError((err as { detail?: string }).detail ?? 'Comparison failed. Check that both images have matching dimensions.'); }
+    catch (err) {
+      const detail = (err as { detail?: string }).detail;
+      setError(/timeout/i.test(detail ?? '')
+        ? `The comparison did not finish in time (${detail}). Large composites can take a few minutes; try again or use a smaller pair.`
+        : detail ?? 'Comparison failed. Check that both images have matching dimensions.');
+    }
     finally { setLoading(false); }
   }
 

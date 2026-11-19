@@ -2,7 +2,7 @@
   "index": "data\\dataset-gee7\\index.csv",
   "checkpoint": "models\\weak-label-unet-7region.pt",
   "inference_device": "NVIDIA GeForce RTX 4050 Laptop GPU",
-  "latency_note": "per chip of 256x256 px, one chip per call, including the gate decision; a latency figure is only meaningful alongside the device",
+  "latency_note": "per chip of 256x256 px, one chip per call, including the gate decision but not the NDVI computation, which the pipeline needs anyway. Only meaningful alongside the device. Run-to-run drift on this GPU is about 0.8 ms per chip, which is an order of magnitude larger than the difference between the gated and ungated configurations: measured in both orders they agree to within 0.07 ms, so the gate has no latency effect that this harness can resolve. Do not report a latency difference between those two rows.",
   "label_provenance": "Hansen GFC weak labels; measures agreement with Hansen, not field accuracy",
   "protocol": "threshold tuned on val and applied to test; ignore pixels excluded",
   "results": {
@@ -24,7 +24,7 @@
       "f1": 0.3284,
       "iou": 0.1965,
       "pixel_accuracy": 0.9995,
-      "latency_ms_per_chip": 9.2,
+      "latency_ms_per_chip": 9.0,
       "test_chips": 248,
       "chips_skipped_by_gate": 0
     },
@@ -35,7 +35,7 @@
       "f1": 0.3284,
       "iou": 0.1965,
       "pixel_accuracy": 0.9995,
-      "latency_ms_per_chip": 8.3,
+      "latency_ms_per_chip": 8.4,
       "test_chips": 248,
       "chips_skipped_by_gate": 9
     },

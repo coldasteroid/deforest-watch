@@ -14,9 +14,14 @@ import { nepalEvent } from '../data/nepalEvent';
 
 export function MapPage() {
   const aois = useAois();
-  const alerts = useAlerts();
-  const geoJson = useAlertGeoJson();
   const selectedAoiId = useUiStore((state) => state.selectedAoiId);
+  // The alert layer has to follow the region selector. Querying without
+  // aoi_id drew every region's alerts over whichever region was selected, so
+  // picking a region with no runs still showed another region's polygons
+  // beside a "No successful run yet" card.
+  const alertFilters = selectedAoiId ? { aoi_id: selectedAoiId } : undefined;
+  const alerts = useAlerts(alertFilters);
+  const geoJson = useAlertGeoJson(alertFilters);
   const setSelectedAoiId = useUiStore((state) => state.setSelectedAoiId);
   const opacity = useUiStore((state) => state.overlayOpacity);
   const setOverlayOpacity = useUiStore((state) => state.setOverlayOpacity);
@@ -54,6 +59,13 @@ export function MapPage() {
     ? [[liveSnapshot.data.overlay_bounds[0], liveSnapshot.data.overlay_bounds[1]], [liveSnapshot.data.overlay_bounds[2], liveSnapshot.data.overlay_bounds[3]]] as [[number, number], [number, number]]
     : undefined;
   const displayedAlertGeoJson = geoJson.data;
+  // The snapshot always reads the newest cached composite, whatever region it
+  // belongs to, so its rasters are only drawn when that is the region on
+  // screen. Otherwise one region's imagery sits under another's outline.
+  const selectedAoi = aois.data.items.find((aoi) => aoi.id === selectedAoiId);
+  const imagery = liveSnapshot.data && liveSnapshot.data.aoi_name === selectedAoi?.name
+    ? liveSnapshot.data
+    : undefined;
 
   return (
     <div className="grid h-[calc(100vh-56px)] grid-cols-1 md:grid-cols-[280px_minmax(0,1fr)]">
@@ -95,9 +107,13 @@ export function MapPage() {
               {displayedRun.model_version && <div className="text-muted">Model {displayedRun.model_version}</div>}
             </div>
           ) : <div className="text-sm text-muted">No successful run yet.</div>}
-          {liveSnapshot.data && (
+          {imagery ? (
             <div className="mt-2 border-t border-border pt-2 text-xs text-muted">
-              Imagery layers from the newest cached composite ({liveSnapshot.data.aoi_name}). Unfiltered index imagery, not detector output.
+              Imagery layers from the newest cached composite ({imagery.aoi_name}). Unfiltered index imagery, not detector output.
+            </div>
+          ) : liveSnapshot.data && (
+            <div className="mt-2 border-t border-border pt-2 text-xs text-muted">
+              No cached composite for this region; the imagery layers are off. The newest one covers {liveSnapshot.data.aoi_name}.
             </div>
           )}
         </div>
@@ -112,7 +128,7 @@ export function MapPage() {
         {!ws.connected && <div className="mt-4 flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-sm text-amber-900"><WifiOff size={15} /> Live updates unavailable; polling every 30s.</div>}
       </aside>
       <section className="min-h-[520px]">
-        <MapView aois={aois.data.items} alerts={alerts.data?.items ?? []} alertGeoJson={displayedAlertGeoJson} latestRun={displayedRun} satelliteUrl={liveSnapshot.data?.satellite_url} satelliteBounds={liveBounds} ndviUrl={liveSnapshot.data?.change_url} forestMaskUrl={liveSnapshot.data?.forest_url} opacity={opacity} />
+        <MapView aois={aois.data.items} alerts={alerts.data?.items ?? []} alertGeoJson={displayedAlertGeoJson} latestRun={displayedRun} satelliteUrl={imagery?.satellite_url} satelliteBounds={imagery && liveBounds} ndviUrl={imagery?.change_url} forestMaskUrl={imagery?.forest_url} opacity={opacity} />
       </section>
     </div>
   );
